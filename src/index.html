@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script id="fragment_shader" type="x-shader/x-fragment">
+       
+    varying vec3 v_positionEC;
+    varying vec3 v_normalEC;
+    varying vec2 v_st;
+    uniform sampler2D myImage;
+    uniform vec4 myColor;
+    void main()
+    {
+        vec3 positionToEyeEC = -v_positionEC;
+        vec3 normalEC = normalize(v_normalEC);
+    #ifdef FACE_FORWARD
+        normalEC = faceforward(normalEC, vec3(0.0, 0.0, 1.0), -normalEC);
+    #endif
+        czm_materialInput materialInput;
+        materialInput.normalEC = normalEC;
+        materialInput.positionToEyeEC = positionToEyeEC;
+        materialInput.st = v_st;
+        czm_material material = czm_getMaterial(materialInput);
+        //czm_material material = czm_getDefaultMaterial(materialInput);
+        //material.diffuse = texture2D(myImage, materialInput.st).rgb;
+    #ifdef FLAT
+        gl_FragColor = vec4(material.diffuse + material.emission, material.alpha);
+    #else
+        gl_FragColor = czm_phong(normalize(positionToEyeEC), material, czm_lightDirectionEC);
+    #endif
+    //gl_FragColor =myColor;
+    }
+
+
+        
+    </script>
+    <script id="vertex_shader" type="x-shader/x-vertex">
+       
+        attribute vec3 position3DHigh;
+        attribute vec3 position3DLow;
+        attribute vec3 normal;
+        attribute vec2 st;
+        attribute float batchId;
+        varying vec3 v_positionEC;
+        varying vec3 v_normalEC;
+        varying vec2 v_st;
+        void main()
+        {
+            vec4 p = czm_computePosition();
+            v_positionEC = (czm_modelViewRelativeToEye * p).xyz;      // position in eye coordinates
+            v_normalEC = czm_normal * normal;                         // normal in eye coordinates
+            v_st = st;
+            gl_Position = czm_modelViewProjectionRelativeToEye * p;
+        }
+       
+
+    </script>
+</head>
+
+<body>
+    <div id="cesiumContainer" style="width: 800px; height:480px">
+        <!-- 设置经纬度显示 -->
+        <span style="font-size:24px;">
+            <div id="latlng_show"
+                style="width:450px;height:30px;position:absolute;bottom:40px;right:400px;z-index:1;font-size:15px;">
+                <div style="width:120px;height:30px;float:left;">
+                    <font size="3" color="black">经度：
+                        <span id="longitude_show"></span>°
+                    </font>
+                </div>
+                <div style="width:120px;height:30px;float:left;">
+                    <font size="3" color="black">纬度：
+                        <span id="latitude_show"></span>°
+                    </font>
+                </div>
+                <div style="width:210px;height:30px;float:left;">
+                    <font size="3" color="black">视角高：
+                        <span id="altitude_show"></span>m</font>
+                </div>
+            </div>
+        </span>
+    </div>
+    <button id="playBtn">play</button>
+    <button id="stopBtn">stop</button>
+    <canvas id="canvas-test" width="800" height="480" style="background-color:red"></canvas>
+    <video id="video"  muted autoplay loop crossorigin controls style="display:none;">
+        <source src="../assets/video/h265_1080_608.mp4" type="video/mp4">
+    </video>
+    <!-- 压缩版 -->
+    <!-- <script src="../node_modules/cesium/Build/Cesium/Cesium.js"></script> -->
+    <!-- 未压缩版 -->
+    <script src="../node_modules/cesium/Build/CesiumUnminified/Cesium.js"></script>
+    <!-- 源码版 -->
+    <!-- <script src="../node_modules/cesium/Source/Cesium.js"></script> -->
+    <link href="../node_modules/cesium/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <script src="./common.js"></script>
+    <script src="./decoder-wrap.js"></script>
+    <script type="module" src="./index.js"></script>
+</body>
+
+</html>
